@@ -4,51 +4,62 @@ if (process.argv.length !== 3) {
   throw "Please provide parent file path correctly";
 }
 
-console.log(process.argv[2]);
-console.log(process.argv.length);
 let parent = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 
 class JsonFlattener {
   constructor() {
     this.flatFiles = {};
+    this.flatJson = this.flatJson.bind(this);
   }
 
   getMeta(obj) {
-
+    let result = { };
+    Object.keys(obj).forEach(key => {
+      if (key === "id" || key.startsWith("__")) {
+        result[key] = obj[key];
+      }
+    })
+    return result;
   }
 
   getSingular(string) {
-    
+    if (string.endsWith('s'))
+      return string.slice(0, -1);
+    return string;
   }
 
-  flatJson(parent, parentMeta, path) {
+  flatJson(parent, parentMeta, path, depth) {
     let obj = {};
     Object.keys(parentMeta).forEach(key => {
       obj[key] = parentMeta[key];
     })
     Object.keys(parent).forEach(key => {
-      if (typeof parent[key] === "string") {
+      if (typeof Object(parent[key]) !== parent[key]) {
         obj[key] = parent[key];
       }
     })
     let newMeta = this.getMeta(obj);
+    let indexName = "_".repeat(depth + 1) + "index";
 
     Object.keys(parent).forEach(key => {
-      let tmp_obj = {};
+
       if (Array.isArray(parent[key])) {
         parent[key].forEach((childKey, index) => {
-          newMeta["__index"] = index;
-          path.push(getSingular(key));
-          flatJson(parent[key][childKey], newMeta, path);
-          delete newMeta["__index"]
+          if (depth > 0)
+            newMeta[indexName] = index;
+
+          path.push(this.getSingular(key));
+          this.flatJson(childKey, newMeta, path, depth + 1);
+          if (depth > 0)
+            delete newMeta[indexName];
           path.pop();
         })
         return;
       }
 
       if (typeof parent[key] === "object") {
-        path.push(getSingular(key));
-        flatJson(parent[key], newMeta, path);
+        path.push(key);
+        this.flatJson(parent[key], newMeta, path, depth);
         path.pop();
       }
     })
@@ -58,5 +69,7 @@ class JsonFlattener {
     }
     this.flatFiles[fileName].push(obj);
   }
-
 }
+
+let jf = new JsonFlattener();
+jf.flatJson(parent, {}, [], 0);
