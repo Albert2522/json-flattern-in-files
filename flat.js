@@ -34,7 +34,7 @@ class JsonFlattener {
       obj[key] = parentMeta[key];
     })
     Object.keys(parent).forEach(key => {
-      if (typeof Object(parent[key]) !== parent[key]) {
+      if (typeof parent[key] !== 'object') {
         obj[key] = parent[key];
       }
     })
@@ -69,7 +69,16 @@ class JsonFlattener {
     }
     this.flatFiles[fileName].push(obj);
   }
+
+  saveFiles() {
+    Object.keys(this.flatFiles).forEach(key => {
+      if (key !== '' ) {
+        fs.writeFileSync(`${key}.json`, JSON.stringify(this.flatFiles[key], null, 2) , 'utf-8');
+      }
+    });
+  }
 }
 
 let jf = new JsonFlattener();
 jf.flatJson(parent, {}, [], 0);
+jf.saveFiles();
