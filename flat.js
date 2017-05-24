@@ -34,7 +34,7 @@ class JsonFlattener {
       obj[key] = parentMeta[key];
     })
     Object.keys(parent).forEach(key => {
-      if (typeof parent[key] !== 'object') {
+      if (typeof parent[key] !== 'object' || parent[key] === null) {
         obj[key] = parent[key];
       }
     })
@@ -44,6 +44,10 @@ class JsonFlattener {
     Object.keys(parent).forEach(key => {
 
       if (Array.isArray(parent[key])) {
+        if (parent[key].length !== 0 && typeof parent[key][0] !== 'object') {
+          obj[key] = parent[key];
+          return;
+        }
         parent[key].forEach((childKey, index) => {
           if (depth > 0)
             newMeta[indexName] = index;
@@ -57,7 +61,7 @@ class JsonFlattener {
         return;
       }
 
-      if (typeof parent[key] === "object") {
+      if (typeof parent[key] === "object" && parent[key] !== null) {
         path.push(key);
         this.flatJson(parent[key], newMeta, path, depth);
         path.pop();
